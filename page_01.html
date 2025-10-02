@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Empty HTML File</title>
+</head>
+<body>
+        <h1>Space Shooter: Asteroid Attack</h1>
+        <canvas id="gameCanvas" width="600" height="400" style="background:black; display:block; margin:auto; border:1px solid #fff;"></canvas>
+        <div style="text-align:center; color:white; margin-top:10px;">
+            <span id="score">Score: 0</span>
+            <button id="startBtn">Start Game</button>
+        </div>
+</body>
+<script>
+// --- Space Shooter Game ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const startBtn = document.getElementById('startBtn');
+
+const ship = {
+    x: canvas.width / 2,
+    y: canvas.height - 40,
+    width: 40,
+    height: 20,
+    speed: 5,
+    color: 'lime',
+    dx: 0
+};
+
+let bullets = [];
+let asteroids = [];
+let score = 0;
+let gameOver = false;
+let gameInterval;
+
+function drawShip() {
+    ctx.fillStyle = ship.color;
+    ctx.beginPath();
+    ctx.moveTo(ship.x, ship.y);
+    ctx.lineTo(ship.x - ship.width / 2, ship.y + ship.height);
+    ctx.lineTo(ship.x + ship.width / 2, ship.y + ship.height);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawBullets() {
+    ctx.fillStyle = 'yellow';
+    bullets.forEach(b => {
+        ctx.fillRect(b.x - 2, b.y, 4, 10);
+    });
+}
+
+function drawAsteroids() {
+    ctx.fillStyle = 'gray';
+    asteroids.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+        ctx.fill();
+    });
+}
+
+function moveShip() {
+    ship.x += ship.dx;
+    if (ship.x < ship.width / 2) ship.x = ship.width / 2;
+    if (ship.x > canvas.width - ship.width / 2) ship.x = canvas.width - ship.width / 2;
+}
+
+function moveBullets() {
+    bullets.forEach(b => b.y -= 8);
+    bullets = bullets.filter(b => b.y > -10);
+}
+
+function moveAsteroids() {
+    asteroids.forEach(a => a.y += a.speed);
+    asteroids = asteroids.filter(a => a.y < canvas.height + a.radius);
+}
+
+function spawnAsteroid() {
+    const radius = 15 + Math.random() * 15;
+    const x = radius + Math.random() * (canvas.width - 2 * radius);
+    asteroids.push({ x, y: -radius, radius, speed: 2 + Math.random() * 2 });
+}
+
+function detectCollisions() {
+    // Bullet-asteroid
+    bullets.forEach((b, bi) => {
+        asteroids.forEach((a, ai) => {
+            const dist = Math.hypot(b.x - a.x, b.y - a.y);
+            if (dist < a.radius) {
+                bullets.splice(bi, 1);
+                asteroids.splice(ai, 1);
+                score += 10;
+            }
+        });
+    });
+    // Ship-asteroid
+    asteroids.forEach(a => {
+        const dist = Math.hypot(ship.x - a.x, ship.y - a.y);
+        if (dist < a.radius + ship.height / 2) {
+            gameOver = true;
+        }
+    });
+}
+
+function drawScore() {
+    scoreEl.textContent = 'Score: ' + score;
+}
+
+function drawGameOver() {
+    ctx.fillStyle = 'red';
+    ctx.font = '36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+}
+
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    moveShip();
+    moveBullets();
+    moveAsteroids();
+    detectCollisions();
+    drawShip();
+    drawBullets();
+    drawAsteroids();
+    drawScore();
+    if (gameOver) {
+        drawGameOver();
+        clearInterval(gameInterval);
+        startBtn.disabled = false;
+    }
+}
+
+let asteroidTimer = 0;
+function mainLoop() {
+    gameLoop();
+    asteroidTimer++;
+    if (asteroidTimer % 40 === 0) spawnAsteroid();
+    if (!gameOver) requestAnimationFrame(mainLoop);
+}
+
+function startGame() {
+    bullets = [];
+    asteroids = [];
+    score = 0;
+    gameOver = false;
+    ship.x = canvas.width / 2;
+    asteroidTimer = 0;
+    startBtn.disabled = true;
+    mainLoop();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.code === 'ArrowLeft') ship.dx = -ship.speed;
+    if (e.code === 'ArrowRight') ship.dx = ship.speed;
+    if (e.code === 'Space' && !gameOver) {
+        bullets.push({ x: ship.x, y: ship.y });
+    }
+});
+document.addEventListener('keyup', e => {
+    if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') ship.dx = 0;
+});
+startBtn.onclick = startGame;
+</script>
+</body>
+</html>
