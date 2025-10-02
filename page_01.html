@@ -56,7 +56,7 @@ function drawAsteroids() {
     ctx.fillStyle = 'gray';
     asteroids.forEach(a => {
         ctx.beginPath();
-        ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+        ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 3);
         ctx.fill();
     });
 }
